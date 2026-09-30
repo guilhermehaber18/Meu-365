@@ -2,10 +2,69 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meu 365</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>⚽ Meu 365</h1>
-  <p>Meu site de futebol está no ar</p>
+  <header class="topo">
+    <h1>⚽ Meu 365</h1>
+  </header>
+
+  <nav class="abas">
+    <button class="aba ativa" onclick="abrirAba('hoje', this)">Hoje</button>
+    <button class="aba" onclick="abrirAba('semana', this)">Semana</button>
+    <button class="aba" onclick="abrirAba('mes', this)">Mês</button>
+    <button class="aba" onclick="abrirAba('favoritos', this)">⭐ Favoritos</button>
+    <button class="aba" onclick="abrirAba('estatisticas', this)">📊 Estatísticas</button>
+  </nav>
+
+  <main>
+    <section id="hoje" class="conteudo ativo">
+      <h2>Jogos de hoje</h2>
+
+      <div class="jogo">
+        <div class="campeonato">Brasileirão · 21h30 (exemplo)</div>
+        <div class="placar">
+          <span class="time">Palmeiras</span>
+          <span class="vs">x</span>
+          <span class="time">Flamengo</span>
+        </div>
+        <div class="onde-passa">📺 Globo · Premiere</div>
+      </div>
+
+      <div class="jogo">
+        <div class="campeonato">Brasileirão · 19h00 (exemplo)</div>
+        <div class="placar">
+          <span class="time">Corinthians</span>
+          <span class="vs">x</span>
+          <span class="time">São Paulo</span>
+        </div>
+        <div class="onde-passa">📺 Prime Video</div>
+      </div>
+    </section>
+
+    <section id="semana" class="conteudo">
+      <h2>Jogos da semana</h2>
+      <p class="aviso">Em breve: jogos reais da API (Dia 7)</p>
+    </section>
+
+    <section id="mes" class="conteudo">
+      <h2>Jogos do mês</h2>
+      <p class="aviso">Em breve: jogos reais da API (Dia 7)</p>
+    </section>
+
+    <section id="favoritos" class="conteudo">
+      <h2>Meus favoritos</h2>
+      <p class="aviso">Em breve: seus times salvos no Supabase (Dia 9)</p>
+    </section>
+
+    <section id="estatisticas" class="conteudo">
+      <h2>Estatísticas</h2>
+      <p class="aviso">Em breve: números dos seus times (Dia 11)</p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
 </body>
 </html>

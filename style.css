@@ -1,0 +1,79 @@
+:root {
+  --fundo: #0f1419;
+  --cartao: #1c2430;
+  --destaque: #00c853;
+  --texto: #ffffff;
+  --texto-suave: #8b98a5;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: Arial, sans-serif;
+}
+
+.topo {
+  padding: 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--cartao);
+}
+
+.abas {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  background: var(--fundo);
+}
+
+.aba {
+  background: var(--cartao);
+  color: var(--texto-suave);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.aba.ativa {
+  background: var(--destaque);
+  color: #000;
+  font-weight: bold;
+}
+
+main { padding: 12px; max-width: 600px; margin: 0 auto; }
+
+h2 { font-size: 18px; margin-bottom: 12px; }
+
+.conteudo { display: none; }
+.conteudo.ativo { display: block; }
+
+.jogo {
+  background: var(--cartao);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.campeonato { font-size: 12px; color: var(--texto-suave); margin-bottom: 8px; }
+
+.placar {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.time { flex: 1; }
+.time:last-child { text-align: right; }
+.vs { color: var(--texto-suave); font-size: 14px; padding: 0 10px; }
+
+.onde-passa { margin-top: 10px; font-size: 13px; color: var(--destaque); }
+
+.aviso { color: var(--texto-suave); text-align: center; padding: 40px 0; }
