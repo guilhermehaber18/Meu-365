@@ -44,7 +44,7 @@ async function carregarHoje() {
   prateleira.innerHTML = '<p class="aviso">Carregando jogos...</p>';
 
   const agora = new Date();
-  const amanha = new Date(agora.getTime() + 24 * 60 * 60 * 1000);
+     const amanha = new Date(agora.getTime() + 2 * 24 * 60 * 60 * 1000);
   const hoje = diaBrasilia(agora);
 
   try {
