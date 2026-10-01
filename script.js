@@ -34,6 +34,7 @@ const CANAL_PADRAO = {
 let todosJogos = [];     // a "compra do mês"
 let favoritos = [];      // lista do Supabase
 let transmissoes = {};   // agenda: número do jogo → canal
+let classificacao = [];  // tabela do campeonato escolhido nas Estatísticas
 
 function ehFavorito(id) {
   return favoritos.some(f => f.time_id === id);
@@ -123,6 +124,9 @@ function desenharTudo() {
   html += '<h3 class="subtitulo">Próximos jogos</h3>';
   html += montarLista(jogosFav, true, 'Nenhum jogo dos seus times nos próximos 30 dias.');
   document.getElementById('lista-favoritos').innerHTML = html;
+
+  // Se a tabela já foi carregada, redesenha (pra atualizar os destaques dos favoritos)
+  if (classificacao.length > 0) desenharClassificacao();
 }
 
 // ===== BUSCAR OS FAVORITOS =====
@@ -197,6 +201,84 @@ async function editarCanal(jogoId) {
   }
 }
 
+// ===== ESTATÍSTICAS: BUSCAR A TABELA DO CAMPEONATO =====
+async function carregarClassificacao(codigo, botao) {
+  // Pinta de verde o botão do campeonato escolhido
+  if (botao) {
+    document.querySelectorAll('.filtro').forEach(b => b.classList.remove('ativa'));
+    botao.classList.add('ativa');
+  }
+
+  const caixa = document.getElementById('lista-estatisticas');
+  caixa.innerHTML = '<p class="aviso">Carregando tabela...</p>';
+
+  try {
+    const resposta = await fetch(`/api/classificacao?campeonato=${codigo}`);
+    const dados = await resposta.json();
+    // A API manda várias tabelas (geral, só em casa, só fora): pegamos a geral
+    const geral = (dados.standings || []).find(s => s.type === 'TOTAL');
+    classificacao = geral ? geral.table : [];
+    desenharClassificacao();
+  } catch (erro) {
+    caixa.innerHTML = '<p class="aviso">Erro ao carregar a tabela 😢</p>';
+  }
+}
+
+// ===== APROVEITAMENTO (a mesma conta do seu estatisticas.py!) =====
+function aproveitamento(linha) {
+  if (linha.playedGames === 0) return 0;
+  return Math.round(linha.points / (linha.playedGames * 3) * 100);
+}
+
+// ===== ESTATÍSTICAS: DESENHAR CARTÕES + TABELA =====
+function desenharClassificacao() {
+  const caixa = document.getElementById('lista-estatisticas');
+  if (classificacao.length === 0) {
+    caixa.innerHTML = '<p class="aviso">Tabela indisponível para esse campeonato agora.</p>';
+    return;
+  }
+
+  let html = '';
+
+  // 1. Cartões com os números dos MEUS times
+  const meus = classificacao.filter(linha => ehFavorito(linha.team.id));
+  if (meus.length > 0) {
+    html += '<h3 class="subtitulo">Meus times</h3>';
+    html += meus.map(linha => `
+      <div class="jogo favorito">
+        <div class="cabeca-time">
+          <img src="${linha.team.crest}" alt="">
+          <strong>${linha.position}º · ${linha.team.shortName || linha.team.name}</strong>
+        </div>
+        <div class="numeros">
+          <div><span>${linha.points}</span>pontos</div>
+          <div><span>${linha.won}-${linha.draw}-${linha.lost}</span>V-E-D</div>
+          <div><span>${linha.goalsFor}:${linha.goalsAgainst}</span>gols</div>
+          <div><span>${linha.goalDifference > 0 ? '+' : ''}${linha.goalDifference}</span>saldo</div>
+          <div><span>${aproveitamento(linha)}%</span>aprov.</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // 2. Tabela completa, com os favoritos em destaque
+  html += '<h3 class="subtitulo">Classificação</h3>';
+  html += `
+    <table class="tabela">
+      <tr><th>#</th><th class="esq">Time</th><th>P</th><th>J</th><th>SG</th><th>%</th></tr>
+      ${classificacao.map(linha => `
+        <tr class="${ehFavorito(linha.team.id) ? 'meu-time' : ''}">
+          <td>${linha.position}</td>
+          <td class="esq"><img src="${linha.team.crest}" alt=""> ${linha.team.shortName || linha.team.name}</td>
+          <td><strong>${linha.points}</strong></td>
+          <td>${linha.playedGames}</td>
+          <td>${linha.goalDifference}</td>
+          <td>${aproveitamento(linha)}</td>
+        </tr>`).join('')}
+    </table>`;
+
+  caixa.innerHTML = html;
+}
+
 // ===== QUANDO O SITE ABRE =====
 async function iniciar() {
   const ids = ['lista-hoje', 'lista-semana', 'lista-mes', 'lista-favoritos'];
@@ -218,3 +300,4 @@ async function iniciar() {
 }
 
 iniciar();
+carregarClassificacao('BSA');

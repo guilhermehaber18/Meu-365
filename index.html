@@ -42,7 +42,12 @@
 
     <section id="estatisticas" class="conteudo">
       <h2>Estatísticas</h2>
-      <p class="aviso">Em breve: números dos seus times (Dia 11)</p>
+            <div class="filtros">
+        <button class="filtro ativa" onclick="carregarClassificacao('BSA', this)">Brasileirão</button>
+        <button class="filtro" onclick="carregarClassificacao('PL', this)">Premier League</button>
+        <button class="filtro" onclick="carregarClassificacao('CL', this)">Champions</button>
+      </div>
+      <div id="lista-estatisticas"></div>
     </section>
   </main>
 

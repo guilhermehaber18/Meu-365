@@ -116,3 +116,27 @@ h2 { font-size: 18px; margin-bottom: 12px; }
   margin-top: 10px;
 }
 .onde-passa { cursor: pointer; }
+
+.filtros { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.filtro {
+  background: none;
+  border: 1px solid var(--cartao);
+  color: var(--texto-suave);
+  padding: 5px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.filtro.ativa { border-color: var(--destaque); color: var(--destaque); }
+
+.cabeca-time { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.cabeca-time img, .tabela img { width: 18px; height: 18px; vertical-align: middle; }
+
+.numeros { display: flex; justify-content: space-between; text-align: center; font-size: 11px; color: var(--texto-suave); }
+.numeros span { display: block; font-size: 16px; font-weight: bold; color: var(--texto); }
+
+.tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tabela th { color: var(--texto-suave); font-weight: normal; padding: 6px 4px; text-align: center; }
+.tabela td { padding: 7px 4px; text-align: center; border-top: 1px solid var(--cartao); }
+.tabela .esq { text-align: left; }
+.tabela tr.meu-time td { background: rgba(255, 193, 7, 0.12); }
