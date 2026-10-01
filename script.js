@@ -58,4 +58,162 @@ function criarCartao(jogo) {
   // Primeiro o que você cadastrou; se não tiver, usa a regra do campeonato
   const canal = transmissoes[jogo.id] || CANAL_PADRAO[jogo.competition.code];
   const ondePassa = canal
-    ? `<div class="onde-passa" onclick="editarCanal(${jogo.id})">📺
+    ? `<div class="onde-passa" onclick="editarCanal(${jogo.id})">📺 ${canal}</div>`
+    : `<button class="botao-canal" onclick="editarCanal(${jogo.id})">+ onde passa</button>`;
+
+  return `
+    <div class="jogo ${temFavorito ? 'favorito' : ''}">
+      <div class="campeonato">${campeonato} · ${horaBrasilia(data)}</div>
+      <div class="placar">
+        <span class="time">${estrela(jogo.homeTeam.id, casa)} ${casa}</span>
+        <span class="vs">${meio}</span>
+        <span class="time">${fora} ${estrela(jogo.awayTeam.id, fora)}</span>
+      </div>
+      ${ondePassa}
+    </div>`;
+}
+
+// ===== MONTAR UMA LISTA (com ou sem divisórias por dia) =====
+function montarLista(jogos, separarPorDia, textoVazio) {
+  if (jogos.length === 0) return `<p class="aviso">${textoVazio}</p>`;
+  if (!separarPorDia) return jogos.map(criarCartao).join('');
+
+  let html = '';
+  let diaAnterior = '';
+  jogos.forEach(jogo => {
+    const data = new Date(jogo.utcDate);
+    const dia = diaBrasilia(data);
+    if (dia !== diaAnterior) {
+      html += `<div class="dia">${tituloDia(data)}</div>`;
+      diaAnterior = dia;
+    }
+    html += criarCartao(jogo);
+  });
+  return html;
+}
+
+// ===== DESENHAR TODAS AS ABAS =====
+function desenharTudo() {
+  const agora = new Date();
+  const hoje = diaBrasilia(agora);
+  const fimSemana = diaBrasilia(somarDias(agora, 7));
+  const fimMes = diaBrasilia(somarDias(agora, 30));
+  const diaDe = jogo => diaBrasilia(new Date(jogo.utcDate));
+
+  const jogosHoje = todosJogos.filter(j => diaDe(j) === hoje);
+  const jogosSemana = todosJogos.filter(j => diaDe(j) >= hoje && diaDe(j) < fimSemana);
+  const jogosMes = todosJogos.filter(j => diaDe(j) >= hoje && diaDe(j) < fimMes);
+  const jogosFav = jogosMes.filter(j => ehFavorito(j.homeTeam.id) || ehFavorito(j.awayTeam.id));
+
+  document.getElementById('lista-hoje').innerHTML = montarLista(jogosHoje, false, 'Nenhum jogo hoje nos seus campeonatos.');
+  document.getElementById('lista-semana').innerHTML = montarLista(jogosSemana, true, 'Nenhum jogo nos próximos 7 dias.');
+  document.getElementById('lista-mes').innerHTML = montarLista(jogosMes, true, 'Nenhum jogo nos próximos 30 dias.');
+
+  let html = '<h3 class="subtitulo">Meus times</h3>';
+  if (favoritos.length === 0) {
+    html += '<p class="aviso">Toque na ☆ de um time pra favoritar.</p>';
+  } else {
+    html += favoritos.map(f => `
+      <div class="jogo linha-fav">
+        <strong>${f.nome}</strong>
+        ${estrela(f.time_id, f.nome)}
+      </div>`).join('');
+  }
+  html += '<h3 class="subtitulo">Próximos jogos</h3>';
+  html += montarLista(jogosFav, true, 'Nenhum jogo dos seus times nos próximos 30 dias.');
+  document.getElementById('lista-favoritos').innerHTML = html;
+}
+
+// ===== BUSCAR OS FAVORITOS =====
+async function carregarFavoritos() {
+  try {
+    const resposta = await fetch('/api/favoritos');
+    const dados = await resposta.json();
+    favoritos = Array.isArray(dados) ? dados : [];
+  } catch (erro) {
+    favoritos = [];
+  }
+}
+
+// ===== BUSCAR AS TRANSMISSÕES (a agenda) =====
+async function carregarTransmissoes() {
+  try {
+    const resposta = await fetch('/api/transmissoes');
+    const dados = await resposta.json();
+    transmissoes = Array.isArray(dados)
+      ? Object.fromEntries(dados.map(t => [t.jogo_id, t.canal]))
+      : {};
+  } catch (erro) {
+    transmissoes = {};
+  }
+}
+
+// ===== CLICAR NA ESTRELA =====
+async function alternarFavorito(botao) {
+  const id = Number(botao.dataset.id);
+  const nome = botao.dataset.nome;
+  botao.disabled = true;
+
+  try {
+    if (ehFavorito(id)) {
+      await fetch(`/api/favoritos?time_id=${id}`, { method: 'DELETE' });
+    } else {
+      await fetch('/api/favoritos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ time_id: id, nome })
+      });
+    }
+    await carregarFavoritos();
+    desenharTudo();
+  } catch (erro) {
+    alert('Não consegui salvar o favorito 😢');
+    botao.disabled = false;
+  }
+}
+
+// ===== CADASTRAR / EDITAR / APAGAR O CANAL =====
+async function editarCanal(jogoId) {
+  const atual = transmissoes[jogoId] || '';
+  const resposta = prompt('Onde passa esse jogo? (ex.: Globo, Premiere, Prime Video)\nDeixe vazio para voltar ao padrão.', atual);
+  if (resposta === null) return;   // clicou em Cancelar
+  const canal = resposta.trim();
+
+  try {
+    if (canal === '') {
+      await fetch(`/api/transmissoes?jogo_id=${jogoId}`, { method: 'DELETE' });
+    } else {
+      await fetch('/api/transmissoes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jogo_id: jogoId, canal })
+      });
+    }
+    await carregarTransmissoes();
+    desenharTudo();
+  } catch (erro) {
+    alert('Não consegui salvar o canal 😢');
+  }
+}
+
+// ===== QUANDO O SITE ABRE =====
+async function iniciar() {
+  const ids = ['lista-hoje', 'lista-semana', 'lista-mes', 'lista-favoritos'];
+  ids.forEach(id => document.getElementById(id).innerHTML = '<p class="aviso">Carregando...</p>');
+
+  const agora = new Date();
+  try {
+    const [resposta] = await Promise.all([
+      fetch(`/api/jogos?de=${diaBrasilia(agora)}&ate=${diaBrasilia(somarDias(agora, 31))}`),
+      carregarFavoritos(),
+      carregarTransmissoes()
+    ]);
+    const dados = await resposta.json();
+    todosJogos = dados.matches || [];
+    desenharTudo();
+  } catch (erro) {
+    ids.forEach(id => document.getElementById(id).innerHTML = '<p class="aviso">Erro ao carregar 😢</p>');
+  }
+}
+
+iniciar();
