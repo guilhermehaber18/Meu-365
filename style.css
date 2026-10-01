@@ -104,3 +104,15 @@ h2 { font-size: 18px; margin-bottom: 12px; }
   justify-content: space-between;
   align-items: center;
 }
+
+.botao-canal {
+  background: none;
+  border: 1px dashed var(--texto-suave);
+  color: var(--texto-suave);
+  border-radius: 8px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.onde-passa { cursor: pointer; }
