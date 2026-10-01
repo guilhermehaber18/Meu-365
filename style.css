@@ -140,3 +140,32 @@ h2 { font-size: 18px; margin-bottom: 12px; }
 .tabela td { padding: 7px 4px; text-align: center; border-top: 1px solid var(--cartao); }
 .tabela .esq { text-align: left; }
 .tabela tr.meu-time td { background: rgba(255, 193, 7, 0.12); }
+
+   .topo-info {
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     gap: 8px;
+     margin-top: 6px;
+     font-size: 12px;
+     color: var(--texto-suave);
+   }
+   #botao-atualizar {
+     background: var(--cartao);
+     border: none;
+     border-radius: 50%;
+     width: 30px;
+     height: 30px;
+     cursor: pointer;
+   }
+
+      /* ===== AJUSTES PARA CELULAR ===== */
+   @media (max-width: 480px) {
+     .topo h1 { font-size: 22px; }
+     .aba { padding: 7px 12px; font-size: 13px; }
+     .placar { font-size: 14px; }
+     .estrela { font-size: 16px; padding: 0 2px; }
+     .numeros span { font-size: 14px; }
+     .tabela { font-size: 12px; }
+     .tabela td, .tabela th { padding: 6px 2px; }
+   }

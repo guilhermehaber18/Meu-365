@@ -301,3 +301,20 @@ async function iniciar() {
 
 iniciar();
 carregarClassificacao('BSA');
+
+   // ===== BOTÃO ATUALIZAR 🔄 =====
+   function marcarHorario() {
+     document.getElementById('atualizado').textContent = 'Atualizado às ' + horaBrasilia(new Date());
+   }
+
+   async function atualizar() {
+     const botao = document.getElementById('botao-atualizar');
+     botao.disabled = true;
+     botao.textContent = '⏳';
+     await iniciar();
+     marcarHorario();
+     botao.textContent = '🔄';
+     botao.disabled = false;
+   }
+
+   marcarHorario();
