@@ -100,3 +100,28 @@ async function carregarJogos() {
 
 // Quando o site abre, faz a compra do mês
 carregarJogos();
+
+   // ===== FAVORITOS (lidos do Supabase pelo atendente) =====
+   async function carregarFavoritos() {
+     const prateleira = document.getElementById('lista-favoritos');
+     prateleira.innerHTML = '<p class="aviso">Carregando favoritos...</p>';
+
+     try {
+       const resposta = await fetch('/api/favoritos');
+       const favoritos = await resposta.json();
+
+       if (!Array.isArray(favoritos) || favoritos.length === 0) {
+         prateleira.innerHTML = '<p class="aviso">Você ainda não tem favoritos.</p>';
+         return;
+       }
+
+       prateleira.innerHTML = favoritos.map(f => `
+         <div class="jogo">
+           <strong>⭐ ${f.nome}</strong>
+         </div>`).join('');
+     } catch (erro) {
+       prateleira.innerHTML = '<p class="aviso">Erro ao carregar favoritos 😢</p>';
+     }
+   }
+
+   carregarFavoritos();
