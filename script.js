@@ -25,6 +25,7 @@ const CAMPEONATOS = { BSA: 'Brasileirão', PL: 'Premier League', CL: 'Champions 
 
 // ===== CANAL AUTOMÁTICO POR CAMPEONATO (temporada 2026/27) =====
 const CANAL_PADRAO = {
+  BSA: 'Premiere (maioria dos jogos)',
   PL: 'Disney+ · ESPN (alguns jogos)',
   CL: 'HBO Max · TNT/Space/SBT (alguns jogos)'
 };
