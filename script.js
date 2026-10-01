@@ -31,10 +31,12 @@ const CANAL_PADRAO = {
 };
 
 // ===== MEMÓRIA DO SITE =====
-let todosJogos = [];     // a "compra do mês"
-let favoritos = [];      // lista do Supabase
-let transmissoes = {};   // agenda: número do jogo → canal
-let classificacao = [];  // tabela do campeonato escolhido nas Estatísticas
+let todosJogos = [];       // a "compra do mês"
+let favoritos = [];        // lista do Supabase
+let transmissoes = {};     // agenda: número do jogo → canal
+let classificacao = [];    // tabela do campeonato escolhido nas Estatísticas
+let timesPesquisa = null;  // todos os times (só carrega na primeira pesquisa)
+let carregandoTimes = null;
 
 function ehFavorito(id) {
   return favoritos.some(f => f.time_id === id);
@@ -125,8 +127,9 @@ function desenharTudo() {
   html += montarLista(jogosFav, true, 'Nenhum jogo dos seus times nos próximos 30 dias.');
   document.getElementById('lista-favoritos').innerHTML = html;
 
-  // Se a tabela já foi carregada, redesenha (pra atualizar os destaques dos favoritos)
+  // Atualiza as estrelas das outras abas também
   if (classificacao.length > 0) desenharClassificacao();
+  if (timesPesquisa) desenharPesquisa();
 }
 
 // ===== BUSCAR OS FAVORITOS =====
@@ -203,7 +206,6 @@ async function editarCanal(jogoId) {
 
 // ===== ESTATÍSTICAS: BUSCAR A TABELA DO CAMPEONATO =====
 async function carregarClassificacao(codigo, botao) {
-  // Pinta de verde o botão do campeonato escolhido
   if (botao) {
     document.querySelectorAll('.filtro').forEach(b => b.classList.remove('ativa'));
     botao.classList.add('ativa');
@@ -215,7 +217,6 @@ async function carregarClassificacao(codigo, botao) {
   try {
     const resposta = await fetch(`/api/classificacao?campeonato=${codigo}`);
     const dados = await resposta.json();
-    // A API manda várias tabelas (geral, só em casa, só fora): pegamos a geral
     const geral = (dados.standings || []).find(s => s.type === 'TOTAL');
     classificacao = geral ? geral.table : [];
     desenharClassificacao();
@@ -240,7 +241,6 @@ function desenharClassificacao() {
 
   let html = '';
 
-  // 1. Cartões com os números dos MEUS times
   const meus = classificacao.filter(linha => ehFavorito(linha.team.id));
   if (meus.length > 0) {
     html += '<h3 class="subtitulo">Meus times</h3>';
@@ -260,7 +260,6 @@ function desenharClassificacao() {
       </div>`).join('');
   }
 
-  // 2. Tabela completa, com os favoritos em destaque
   html += '<h3 class="subtitulo">Classificação</h3>';
   html += `
     <table class="tabela">
@@ -277,6 +276,86 @@ function desenharClassificacao() {
     </table>`;
 
   caixa.innerHTML = html;
+}
+
+// ===== PESQUISA: TIRAR ACENTOS E MAIÚSCULAS ("São" → "sao") =====
+function semAcento(texto) {
+  return (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+// ===== PESQUISA: JUNTAR OS TIMES DAS 3 TABELAS =====
+async function carregarTimes() {
+  const mapa = {};
+  for (const codigo of ['BSA', 'PL', 'CL']) {
+    const resposta = await fetch(`/api/classificacao?campeonato=${codigo}`);
+    const dados = await resposta.json();
+    const geral = (dados.standings || []).find(s => s.type === 'TOTAL');
+    (geral ? geral.table : []).forEach(linha => {
+      const id = linha.team.id;
+      // Se o time joga 2 campeonatos, guarda os números dos dois
+      if (!mapa[id]) mapa[id] = { time: linha.team, campeonatos: [] };
+      mapa[id].campeonatos.push({ codigo, linha });
+    });
+  }
+  timesPesquisa = Object.values(mapa);
+}
+
+// ===== PESQUISA: MOSTRAR OS RESULTADOS =====
+async function desenharPesquisa() {
+  const caixa = document.getElementById('lista-pesquisa');
+  const termo = semAcento(document.getElementById('campo-pesquisa').value.trim());
+
+  if (termo.length < 2) {
+    caixa.innerHTML = '<p class="aviso">Digite pelo menos 2 letras do nome do time.</p>';
+    return;
+  }
+
+  // Na primeira pesquisa, busca os times (só uma vez)
+  if (!timesPesquisa) {
+    caixa.innerHTML = '<p class="aviso">Carregando times...</p>';
+    if (!carregandoTimes) carregandoTimes = carregarTimes();
+    try {
+      await carregandoTimes;
+    } catch (erro) {
+      carregandoTimes = null;
+      caixa.innerHTML = '<p class="aviso">Erro ao carregar os times 😢</p>';
+      return;
+    }
+  }
+
+  // Lê de novo o que está digitado (a pessoa pode ter continuado digitando)
+  const termoAtual = semAcento(document.getElementById('campo-pesquisa').value.trim());
+  if (termoAtual.length < 2) return;
+
+  const achados = timesPesquisa.filter(t =>
+    semAcento(t.time.name).includes(termoAtual) || semAcento(t.time.shortName).includes(termoAtual)
+  );
+
+  if (achados.length === 0) {
+    caixa.innerHTML = '<p class="aviso">Nenhum time encontrado nos seus campeonatos.</p>';
+    return;
+  }
+
+  caixa.innerHTML = achados.slice(0, 10).map(t => {
+    const nome = t.time.shortName || t.time.name;
+    const numeros = t.campeonatos.map(({ codigo, linha }) => `
+      <div class="campeonato">${CAMPEONATOS[codigo]} · ${linha.position}º lugar</div>
+      <div class="numeros">
+        <div><span>${linha.points}</span>pontos</div>
+        <div><span>${linha.won}-${linha.draw}-${linha.lost}</span>V-E-D</div>
+        <div><span>${linha.goalsFor}:${linha.goalsAgainst}</span>gols</div>
+        <div><span>${aproveitamento(linha)}%</span>aprov.</div>
+      </div>`).join('');
+
+    return `
+      <div class="jogo ${ehFavorito(t.time.id) ? 'favorito' : ''}">
+        <div class="cabeca-time linha-fav">
+          <span><img src="${t.time.crest}" alt=""> <strong>${nome}</strong></span>
+          ${estrela(t.time.id, nome)}
+        </div>
+        ${numeros}
+      </div>`;
+  }).join('');
 }
 
 // ===== QUANDO O SITE ABRE =====
@@ -299,22 +378,23 @@ async function iniciar() {
   }
 }
 
+// ===== BOTÃO ATUALIZAR 🔄 =====
+function marcarHorario() {
+  document.getElementById('atualizado').textContent = 'Atualizado às ' + horaBrasilia(new Date());
+}
+
+async function atualizar() {
+  const botao = document.getElementById('botao-atualizar');
+  botao.disabled = true;
+  botao.textContent = '⏳';
+  await iniciar();
+  marcarHorario();
+  botao.textContent = '🔄';
+  botao.disabled = false;
+}
+
+// ===== LIGAR TUDO =====
 iniciar();
 carregarClassificacao('BSA');
-
-   // ===== BOTÃO ATUALIZAR 🔄 =====
-   function marcarHorario() {
-     document.getElementById('atualizado').textContent = 'Atualizado às ' + horaBrasilia(new Date());
-   }
-
-   async function atualizar() {
-     const botao = document.getElementById('botao-atualizar');
-     botao.disabled = true;
-     botao.textContent = '⏳';
-     await iniciar();
-     marcarHorario();
-     botao.textContent = '🔄';
-     botao.disabled = false;
-   }
-
-   marcarHorario();
+marcarHorario();
+desenharPesquisa();
